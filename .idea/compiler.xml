@@ -8,8 +8,8 @@
         <outputRelativeToContentRoot value="true" />
         <module name="AuthorizationServer" />
         <module name="ProcessService" />
-        <module name="ImageService" />
         <module name="UserService" />
+        <module name="ImageService" />
         <module name="ApiGateway" />
         <module name="ServiceDiscovery" />
       </profile>
