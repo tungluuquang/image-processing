@@ -21,22 +21,25 @@ public class CustomJwtAuthenticationConverter implements Converter<Jwt, JwtAuthe
     @Override
     public JwtAuthenticationToken convert(Jwt source) {
         Object rolesClaimObj = source.getClaim("roles");
+        List<GrantedAuthority> authorities;
 
-        // Safe cast to List<Map<String, Object>>
-        List<Map<String, Object>> rolesClaim;
-        if (rolesClaimObj instanceof List<?>) {
-            rolesClaim = ((List<?>) rolesClaimObj).stream()
-                    .filter(Map.class::isInstance)
-                    .map(item -> (Map<String, Object>) item)
-                    .collect(Collectors.toList());
+        if (rolesClaimObj == null) {
+            authorities = List.of(new SimpleGrantedAuthority("ROLE_GUEST"));
         } else {
-            rolesClaim = Collections.emptyList();
-        }
-
-        List<GrantedAuthority> authorities = rolesClaim.stream()
+            // Safe cast to List<Map<String, Object>>
+            List<Map<String, Object>> rolesClaim;
+            if (rolesClaimObj instanceof List<?>) {
+                rolesClaim = ((List<?>) rolesClaimObj).stream()
+                        .filter(Map.class::isInstance)
+                        .map(item -> (Map<String, Object>) item)
+                        .collect(Collectors.toList());
+            } else {
+                rolesClaim = Collections.emptyList();
+            }
+        authorities = rolesClaim.stream()
                 .map(roleMap -> new SimpleGrantedAuthority("ROLE_" + roleMap.get("role")))
                 .collect(Collectors.toList());
-
+        }
         return new JwtAuthenticationToken(source, authorities);
     }
 }

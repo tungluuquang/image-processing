@@ -18,10 +18,13 @@ public class CustomAuthenticationManagerResolver implements AuthenticationManage
 
     public CustomAuthenticationManagerResolver(CustomJwtAuthenticationConverter customJwtAuthenticationConverter,
                                                GoogleJwtAuthenticationConverter googleJwtAuthenticationConverter,
+                                               GuestJwtAuthenticationConverter guestJwtAuthenticationConverter,
                                                String googleIssuer,
                                                String googleJwkUri,
                                                String imageProcessingIssuer,
-                                               String imageProcessingJwkUri
+                                               String imageProcessingJwkUri,
+                                               String guestIssuer,
+                                               String guestJwtUri
     ) {
         JwtDecoder imageDecoder = NimbusJwtDecoder.withJwkSetUri(imageProcessingJwkUri).build();
         JwtAuthenticationProvider imageProvider = new JwtAuthenticationProvider(imageDecoder);
@@ -32,13 +35,18 @@ public class CustomAuthenticationManagerResolver implements AuthenticationManage
         JwtAuthenticationProvider googleProvider = new JwtAuthenticationProvider(googleDecoder);
         googleProvider.setJwtAuthenticationConverter(googleJwtAuthenticationConverter);
         authenticationManagers.put(googleIssuer, googleProvider::authenticate);
+
+        JwtDecoder guestDecoder = NimbusJwtDecoder.withJwkSetUri(guestJwtUri).build();
+        JwtAuthenticationProvider guestProvider = new JwtAuthenticationProvider(guestDecoder);
+        guestProvider.setJwtAuthenticationConverter(guestJwtAuthenticationConverter);
+        authenticationManagers.put(guestIssuer, guestProvider::authenticate);
     }
 
     @Override
     public AuthenticationManager resolve(HttpServletRequest context) {
         String header = context.getHeader("Authorization");
         if (header == null || !header.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("No Bearer token found in request");
+            return null;
         }
 
         String token = header.substring(7);
