@@ -1,5 +1,6 @@
 package com.ip.apigateway.security;
 
+import com.ip.apigateway.properties.AuthProvidersProperties;
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,27 +20,25 @@ public class CustomAuthenticationManagerResolver implements AuthenticationManage
     public CustomAuthenticationManagerResolver(CustomJwtAuthenticationConverter customJwtAuthenticationConverter,
                                                GoogleJwtAuthenticationConverter googleJwtAuthenticationConverter,
                                                GuestJwtAuthenticationConverter guestJwtAuthenticationConverter,
-                                               String googleIssuer,
-                                               String googleJwkUri,
-                                               String imageProcessingIssuer,
-                                               String imageProcessingJwkUri,
-                                               String guestIssuer,
-                                               String guestJwtUri
+                                               AuthProvidersProperties properties
     ) {
-        JwtDecoder imageDecoder = NimbusJwtDecoder.withJwkSetUri(imageProcessingJwkUri).build();
+        AuthProvidersProperties.Provider ipProps = properties.getIp();
+        JwtDecoder imageDecoder = NimbusJwtDecoder.withJwkSetUri(ipProps.getJwkUri()).build();
         JwtAuthenticationProvider imageProvider = new JwtAuthenticationProvider(imageDecoder);
         imageProvider.setJwtAuthenticationConverter(customJwtAuthenticationConverter);
-        authenticationManagers.put(imageProcessingIssuer, imageProvider::authenticate);
+        authenticationManagers.put(ipProps.getIssuer(), imageProvider::authenticate);
 
-        JwtDecoder googleDecoder = NimbusJwtDecoder.withJwkSetUri(googleJwkUri).build();
+        AuthProvidersProperties.Provider googleProps = properties.getGoogle();
+        JwtDecoder googleDecoder = NimbusJwtDecoder.withJwkSetUri(googleProps.getJwkUri()).build();
         JwtAuthenticationProvider googleProvider = new JwtAuthenticationProvider(googleDecoder);
         googleProvider.setJwtAuthenticationConverter(googleJwtAuthenticationConverter);
-        authenticationManagers.put(googleIssuer, googleProvider::authenticate);
+        authenticationManagers.put(googleProps.getIssuer(), googleProvider::authenticate);
 
-        JwtDecoder guestDecoder = NimbusJwtDecoder.withJwkSetUri(guestJwtUri).build();
+        AuthProvidersProperties.Provider guestIssuer = properties.getGuest();
+        JwtDecoder guestDecoder = NimbusJwtDecoder.withJwkSetUri(guestIssuer.getJwkUri()).build();
         JwtAuthenticationProvider guestProvider = new JwtAuthenticationProvider(guestDecoder);
         guestProvider.setJwtAuthenticationConverter(guestJwtAuthenticationConverter);
-        authenticationManagers.put(guestIssuer, guestProvider::authenticate);
+        authenticationManagers.put(guestIssuer.getIssuer(), guestProvider::authenticate);
     }
 
     @Override

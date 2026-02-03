@@ -1,10 +1,13 @@
 package com.ip.apigateway.config;
 
+import com.ip.apigateway.properties.AuthProvidersProperties;
 import com.ip.apigateway.security.CustomAuthenticationManagerResolver;
 import com.ip.apigateway.security.CustomJwtAuthenticationConverter;
 import com.ip.apigateway.security.GoogleJwtAuthenticationConverter;
 import com.ip.apigateway.security.GuestJwtAuthenticationConverter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,22 +20,13 @@ import org.springframework.http.HttpMethod;
 import java.util.List;
 
 @Configuration
+@RequiredArgsConstructor
+@EnableConfigurationProperties(AuthProvidersProperties.class)
 public class SecurityConfig {
-
-    @Value("${spring.security.oauth2.google.issuer}")
-    private String googleIssuer;
-    @Value("${spring.security.oauth2.google.jwk-uri}")
-    private String googleJwkUri;
-    @Value("${spring.security.oauth2.ip.issuer}")
-    private String imageProcessingIssuer;
-    @Value("${spring.security.oauth2.ip.jwk-uri}")
-    private String imageProcessingJwkUri;
-    @Value("${spring.security.oauth2.guest.issuer}")
-    private String guestIssuer;
-    @Value("${spring.security.oauth2.guest.jwk-uri}")
-    private String guestJwkUri;
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
+
+    private final AuthProvidersProperties authProperties;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -42,9 +36,7 @@ public class SecurityConfig {
                                 new CustomJwtAuthenticationConverter(),
                                 new GoogleJwtAuthenticationConverter(),
                                 new GuestJwtAuthenticationConverter(),
-                                googleIssuer, googleJwkUri,
-                                imageProcessingIssuer, imageProcessingJwkUri,
-                                guestIssuer, guestJwkUri
+                                authProperties
                         )
                 )
         );
