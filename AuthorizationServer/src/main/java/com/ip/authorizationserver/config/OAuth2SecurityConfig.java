@@ -86,9 +86,7 @@ public class OAuth2SecurityConfig {
         http
                 .formLogin(c -> c.loginPage("/login").permitAll())
                 .authorizeHttpRequests(c -> c
-                        // --- CẤU HÌNH CHO GUEST ---
-                        .requestMatchers("/api/v1/auth/guest").permitAll() // Mở endpoint lấy token khách
-                        // --------------------------
+                        .requestMatchers("/api/v1/auth/guest").permitAll()
                         .requestMatchers("/login", "/login.html", "/logout").permitAll()
                         .requestMatchers("/api/v1/users/register", "/api/v1/users/login").permitAll()
                         .anyRequest().authenticated()
@@ -103,7 +101,6 @@ public class OAuth2SecurityConfig {
                 }));
 
         http.csrf(csrf -> csrf
-                // Disable CSRF cho các API này
                 .ignoringRequestMatchers("/logout", "/api/v1/users/**", "/api/v1/auth/guest")
         );
 
