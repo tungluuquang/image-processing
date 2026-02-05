@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # 1. DATABASE: Lưu Metadata (tên file, đường dẫn MinIO, chủ sở hữu...)
+  image-service-db:
+    image: postgres:15-alpine
+    container_name: image_service_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - image_db_data:/var/lib/postgresql/data
+    networks:
+      - image-network
+
+  # 2. OBJECT STORAGE: Lưu file ảnh thực tế (Thay thế S3)
+  minio:
+    image: minio/minio
+    container_name: image_service_minio
+    restart: always
+    ports:
+      - "9000:9000" # API Port (Java gọi vào đây)
+      - "9001:9001" # Console UI (Bạn vào đây quản lý file)
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    # Command để chạy server và set console port
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - image-network
+
+  # 3. MINIO SETUP: Container phụ này chạy 1 lần rồi tắt, nhiệm vụ là tạo sẵn Bucket
+  # Giúp bạn không phải vào tạo tay bucket 'input-images' và 'output-images'
+  createbuckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      # Chờ MinIO khởi động
+      until (/usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY}); do echo '...waiting for minio...'; sleep 1; done;
+      
+      # Tạo bucket Input nếu chưa có
+      /usr/bin/mc mb myminio/${MINIO_BUCKET_INPUT} --ignore-existing;
+      /usr/bin/mc anonymous set public myminio/${MINIO_BUCKET_INPUT};
+      
+      # Tạo bucket Output nếu chưa có
+      /usr/bin/mc mb myminio/${MINIO_BUCKET_OUTPUT} --ignore-existing;
+      /usr/bin/mc anonymous set public myminio/${MINIO_BUCKET_OUTPUT};
+      
+      echo 'Buckets created successfully!';
+      exit 0;
+      "
+    networks:
+      - image-network
+
+  # 4. MESSAGE BROKER: Hàng đợi xử lý ảnh (RabbitMQ)
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: image_service_rabbitmq
+    restart: always
+    ports:
+      - "${RABBITMQ_PORT}:5672"   # Port nhận lệnh
+      - "15672:15672"             # Port giao diện quản lý (http://localhost:15672)
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    networks:
+      - image-network
+
+  # 5. CACHE: Lưu trạng thái xử lý ảnh tạm thời (Processing/Done)
+  redis:
+    image: redis:alpine
+    container_name: image_service_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    # Nếu muốn set pass cho Redis thì dùng dòng dưới, không thì bỏ qua
+    # command: redis-server --requirepass ${REDIS_PASSWORD}
+    networks:
+      - image-network
+
+# Định nghĩa Volumes để dữ liệu không mất khi tắt Docker
+volumes:
+  image_db_data:
+    driver: local
+  minio_data:
+    driver: local
+
+# Định nghĩa Network để các container nhìn thấy nhau
+networks:
+  image-network:
+    driver: bridge
