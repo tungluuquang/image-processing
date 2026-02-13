@@ -33,7 +33,7 @@ public class ImageService {
 
     public void deleteImage(String imageId) {
         Image image = imageRepo.findById(imageId)
-                .orElseThrow(() -> new RuntimeException("Unexisted image file"));
+                .orElseThrow(() -> new RuntimeException("Unlisted image file"));
 
         String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
         if (!image.getOwnerId().equals(currentUserId)) {
