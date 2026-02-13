@@ -25,7 +25,16 @@ public class Image {
     private String ownerId;
 
     private Long size;
+    private String format;
+    private String type;
+    private String originalImageId;
 
     @Column(updatable = false)
     private LocalDateTime uploadedAt = LocalDateTime.now();
+
+    @PrePersist
+    protected void onCreate() {
+        this.uploadedAt = LocalDateTime.now();
+        if (this.type == null) this.type = "ORIGINAL";
+    }
 }

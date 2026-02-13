@@ -4,7 +4,9 @@ import lombok.Data;
 
 @Data
 public class ProcessRequest {
+    private String jobId;
     private String imageId;
+    private String userId;
     private String action;
 
     // --- Thông số cho Resize ---
@@ -19,8 +21,8 @@ public class ProcessRequest {
     private Integer cropHeight;
 
     // --- Thông số cho Compress/Convert ---
-    private String targetFormat;  // "jpg", "png"
-    private Double quality;       // 0.1 -> 1.0 (Nén ảnh)
+    private String targetFormat;
+    private Double quality;
 
     // --- Thông số cho Watermark ---
    // private String watermarkText;

@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -59,7 +58,7 @@ public class ImageService {
 
     public Image getImageDetail(String imageId) {
         return imageRepo.findById(imageId)
-                .orElseThrow(() -> new RuntimeException("Ảnh không tồn tại"));
+                .orElseThrow(() -> new RuntimeException("Do not exist image file"));
     }
 
     public List<Image> getMyImages() {

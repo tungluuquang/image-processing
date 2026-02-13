@@ -1,12 +1,17 @@
 package com.ip.processservice.service;
 
 import io.minio.*;
+import io.minio.messages.*;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
+import java.time.ZonedDateTime;
+import java.util.LinkedList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -72,5 +77,39 @@ public class MinioService {
     public String getPublicUrl(String fileName) {
         String host = publicEndpoint.endsWith("/") ? publicEndpoint : publicEndpoint + "/";
         return host + bucketOutput + "/" + fileName;
+    }
+
+    @PostConstruct
+    public void init() {
+        configureLifecycle();
+    }
+
+    public void configureLifecycle() {
+        try {
+            List<LifecycleRule> rules = new LinkedList<>();
+
+            rules.add(new LifecycleRule(
+                    Status.ENABLED,
+                    null,
+                    new Expiration((ZonedDateTime) null, 1, null),
+                    new RuleFilter("guest/"),
+                    "expire-guest-images-rule", // Tên luật (ID)
+                    null, null, null
+            ));
+
+            LifecycleConfiguration config = new LifecycleConfiguration(rules);
+
+            minioClient.setBucketLifecycle(
+                    SetBucketLifecycleArgs.builder()
+                            .bucket(bucketOutput)
+                            .config(config)
+                            .build()
+            );
+
+            log.info("Saving LifeCycle configuration: Delete automatically guests photos after a day.");
+
+        } catch (Exception e) {
+            log.error("Error Lifecycle MinIO configuration: {}", e.getMessage());
+        }
     }
 }
